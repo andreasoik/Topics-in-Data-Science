@@ -1,0 +1,2120 @@
+
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+
+from sklearn.feature_selection import SelectKBest, f_classif
+
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.feature_selection import SelectFromModel
+from sklearn import decomposition
+
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import LinearSVC
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_recall_fscore_support
+from sklearn import tree
+from sklearn.metrics import roc_curve
+from sklearn.metrics import RocCurveDisplay
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import PrecisionRecallDisplay
+
+from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import KNeighborsClassifier
+
+from matplotlib.colors import ListedColormap
+
+from sklearn.svm import SVC
+from sklearn.metrics import plot_roc_curve
+
+from sklearn.cluster import DBSCAN
+from sklearn import metrics
+from sklearn.cluster import OPTICS, cluster_optics_dbscan
+import matplotlib.gridspec as gridspec
+from sklearn.cluster import KMeans
+from sklearn.cluster import MiniBatchKMeans
+from sklearn.metrics import silhouette_score
+
+
+from mlxtend.preprocessing import TransactionEncoder
+from mlxtend.frequent_patterns import apriori
+from mlxtend.frequent_patterns import association_rules
+from sklearn.preprocessing import LabelEncoder
+
+df.columns=['age','sex','cp','trestbps','chol','fbs','restecg',
+            'thalach','exang','oldpeak','slope','ca','thal','num']
+
+print(df.info())
+
+df=df.replace('?',np.NaN)
+df['num']=df['num'].replace([2,3,4],1)
+print(df)
+
+#Missing Values
+print(df.isnull().sum())
+
+print(df.info())
+
+################## Graphs ##########################
+
+
+###ca attribute
+    #percentage 
+ca_count=df['ca'].value_counts()
+print(ca_count)
+
+ca_percent=round((ca_count/ca_count.values.sum()),4)
+print(ca_percent) #Επικρατύσα τιμη το 0
+
+#barplot
+fig, ax=plt.subplots()
+sns.countplot(df['ca'],palette=['cornflowerblue','red','green','orange'])
+plt.title('Ca barplot')
+plt.xlabel('ca')
+plt.ylabel('Frequency')
+
+#pie chart
+fig, ax=plt.subplots()
+ax.pie(ca_count,labels=ca_count.index, autopct='%1.1f%%',colors=['cornflowerblue','orange','green','red'],
+       shadow=False,startangle=70)
+plt.title('Ca pie chart')
+ax.axis('equal')
+
+# thal attribute
+    #percentage
+thal_count=df['thal'].value_counts()
+thal_percent=(thal_count/thal_count.values.sum())
+print(thal_count)
+
+label=['3:normal','7:reversable defect','6:fixed defect']
+print(thal_percent)
+
+#barplot
+fig, ax=plt.subplots()
+sns.countplot(df['thal'],palette=['lightblue','pink','green'])
+plt.title('Thal barplot')
+
+plt.show()
+
+#pie chart
+fig, ax=plt.subplots()
+ax.pie(thal_count,labels=label,autopct='%1.1f%%',colors=['pink','green','lightblue'],
+     shadow=False,startangle=80)
+plt.title('Thal pie chart')
+ax.axis('equal')
+
+#Missing Values
+
+imputer=SimpleImputer(missing_values=np.nan,strategy='most_frequent')
+imputer=imputer.fit(df[['ca','thal']])
+df[['ca','thal']]=imputer.transform(df[['ca','thal']])
+
+
+print(df.info())
+
+#All cells are completed
+#Descriptive statistics
+#age-histogram
+fig, ax=plt.subplots()
+ax.hist(df['age'],20,rwidth=0.80,color='darkturquoise')
+ax.set_title('Age histogram')
+ax.set_xlabel('age')
+ax.set_ylabel('Frequency')
+
+#age boxplot
+fig, ax=plt.subplots()
+sns.boxplot(x=df['age'],color='darkturquoise')
+plt.title('Age boxplot')
+age_describe=df['age'].describe()
+print(age_describe)
+print("Skewness: %f" % df['age'].skew())
+print("Kurtosis: %f" % df['age'].kurt())
+
+#sex
+sex_count=df['sex'].value_counts()
+percent_sex=round(df['sex'].value_counts(normalize=True) * 100,1)
+percent=percent_sex.loc[1]
+print('Male: %s '%percent_sex.loc[1])
+print('Female: %s '%percent_sex.loc[0])
+
+    #barplot
+data_sex=df['sex'].map({1 : 'male', 0:'female'})
+
+    #barplot
+fig, ax=plt.subplots()
+sns.countplot(data_sex,palette=['red','blue'])
+plt.title('Barplot')
+plt.xlabel('sex')
+plt.ylabel('Frequency')
+
+    #pie chart
+fig, ax=plt.subplots()
+ax.pie(sex_count,labels=['male','female'],autopct='%1.1f%%',
+     shadow=False,colors=['red','blue'],startangle=60)
+plt.title('Pie chart')
+ax.axis('equal')
+
+#cp (chest pain type)
+cp_count=df['cp'].value_counts()
+percent_cp=round(df['cp'].value_counts(normalize=True) * 100,1)
+percent_cp=percent_cp.sort_values(axis=0)
+print('Typical angina: %s' %percent_cp.iloc[0])
+print('Atypical angina: %s' %percent_cp.iloc[1])
+print('Non-anginal pain: %s' %percent_cp.iloc[2])
+print('Asymptomatic:%s' %percent_cp.iloc[3])
+
+data_cp=df['cp'].map({1:'typical angina',2:'atypical angina',
+                      3:'non-anginal pain',4:'asymptomatic'})
+
+    #cp barplot
+fig, ax=plt.subplots()
+sns.countplot(data_cp,palette=['mediumaquamarine','yellow','mediumpurple','lightcoral'])
+plt.title('CP barplot')
+plt.xlabel('cp')
+plt.ylabel('Frequency')
+print(percent_cp)
+print(cp_count)
+
+    #cp pie chart
+cp_label=['asymptomatic', 'non-anginal pain','atypical angina',
+          'typical angina']
+print(cp_count)
+cp_colors=['yellow','mediumpurple','lightcoral','mediumaquamarine']
+fig, ax=plt.subplots()
+ax.pie(cp_count,labels=cp_label,autopct='%1.1f%%',
+       shadow=False,colors=cp_colors,startangle=80)
+plt.title('CP pie chart')
+ax.axis('equal')
+
+#trestbps
+
+    #trestbps histogram
+fig, ax=plt.subplots()
+ax.hist(df['trestbps'],15,color='indianred',rwidth=0.9)
+ax.set_title('Resting blood pressure histogram')
+ax.set_xlabel('trestbps')
+
+    #trestbps boxplot
+fig, ax=plt.subplots()
+sns.boxplot(x=df['trestbps'],color='indianred')
+plt.title('Resting blood pressure boxplot')
+trestbps_describe=df['trestbps'].describe()
+print(trestbps_describe)
+print("Skewness: %f" % df['trestbps'].skew())
+print("Kurtosis: %f" % df['trestbps'].kurt())
+
+#chol
+    #chol histogram
+fig, ax=plt.subplots()
+ax.hist(df['chol'],15,color='violet',rwidth=0.9,)
+ax.set_title('Serum cholestoral histogram')
+ax.set_xlabel('chol')
+
+    #chol boxplot
+fig, ax=plt.subplots()
+sns.boxplot(x=df['chol'],color='violet')
+plt.title('Serum cholestoral boxplot')
+
+trestbps_describe=df['chol'].describe()
+chol_skew=df['chol'].skew()
+chol_kurt=df['chol'].kurt()
+print(round(trestbps_describe,3))
+print("Skewness: %.3f" %chol_skew)
+print("Kurtosis: %.3f" %chol_kurt )
+
+#fbs
+
+fbs_count=df['fbs'].value_counts()
+fbs_percent=round(df['fbs'].value_counts(normalize=True) * 100,2)
+data_fbs=df['fbs'].map({1:'>120 mg/dl',
+                        0:'<120 mg/dl'})
+print(fbs_count)
+print(fbs_percent)
+
+    #fbs barplot
+fig, ax=plt.subplots()
+sns.countplot(data_fbs,palette=['lightskyblue','orange'])
+plt.title('Fasting blood sugar')
+plt.ylabel('Frequency')
+
+    #fbs piechart
+fbs_label=['<120 mg/dl ','>120 mg/dl']
+fig, ax=plt.subplots()
+ax.pie(fbs_count,labels=fbs_label,autopct='%1.1f%%',
+       startangle=15, colors=['orange','lightskyblue'])
+plt.title('Fasting blood sugar pie chart')
+ax.axis('equal')
+
+#restecg
+restecg_count=df['restecg'].value_counts()
+restecg_percent=round(df['restecg'].value_counts(normalize=True)*100 ,2)
+data_restecg=df['restecg'].map({0:'normal',1:'ST-T wave abnormality',
+                               2:'left ventricular hypertrophy by Estes'})
+   
+    #restecg barplot
+fig, ax=plt.subplots()
+sns.countplot(df['restecg'],palette=['springgreen','crimson','gold'])
+plt.title('Resting electrocardiographic results histogram')
+plt.ylabel('Frequency')
+
+    #restecg pie chart
+fig, ax=plt.subplots()
+ax.pie(restecg_count,colors=['springgreen','gold','crimson'],
+       startangle=30,autopct='%1.1f%%',labels=[0,2,1])
+plt.title('Resting electrocardiographic results pie chart')
+ax.axis('equal')
+
+print(restecg_count)
+print(restecg_percent)
+
+#thalach
+
+    #thalach histogram
+fig, ax=plt.subplots()
+ax.hist(df['thalach'],15,color='greenyellow',rwidth=0.9,alpha=0.9)
+ax.set_title('Μaximum heart rate histogram')
+ax.set_xlabel('thalach')
+
+    # thalach boxplot
+fig, ax=plt.subplots()
+sns.boxplot(x=df['thalach'],color='greenyellow')
+ax.set_title('Μaximum heart rate boxplot')
+
+
+thalach_describe=df['thalach'].describe()
+thalach_skew=df['thalach'].skew()
+thalach_kurt=df['thalach'].kurt()
+print(round(thalach_describe,3))
+print("Skewness: %.3f" %thalach_skew)
+print("Kurtosis: %.3f" %thalach_kurt )
+
+#exang
+exang_count=df['exang'].value_counts()
+exang_percent=round(df['exang'].value_counts(normalize=True) * 100,2)
+data_exang=df['exang'].map({1:'yes', 0:'no'})
+
+    #exang barplot
+fig, ax=plt.subplots()
+sns.countplot(data_exang,palette=['crimson','darkseagreen'])
+plt.title('Exercise induced angina')
+plt.ylabel('Frequency')
+
+    #exang piechart
+exang_label=['no','yes']
+fig, ax=plt.subplots()
+ax.pie(exang_count.sort_index(),labels=exang_label,autopct='%1.1f%%',
+       startangle=20, colors=['crimson','darkseagreen'])
+plt.title('Exercise induced angina pie chart')
+ax.axis('equal')
+
+print(exang_percent)
+
+#oldpeak
+fig, ax=plt.subplots()
+ax.hist(df['oldpeak'],15,color='tomato',rwidth=0.9,alpha=0.9)
+ax.set_title('Oldpeak histogram')
+ax.set_xlabel('oldpeak')
+
+#oldpeak boxplot
+fig, ax=plt.subplots()
+sns.boxplot(x=df['oldpeak'],color='tomato')
+plt.title('Oldpeak boxplot')
+oldpeak_describe=df['oldpeak'].describe()
+print(oldpeak_describe)
+print("Skewness: %f" % df['oldpeak'].skew())
+print("Kurtosis: %f" % df['oldpeak'].kurt())
+
+
+#slope
+slope_count=df['slope'].value_counts()
+slope_percent=round(df['slope'].value_counts(normalize=True) * 100,2)
+data_slope=df['slope'].map({1:'upsloping', 2:'flat',3:'downsloping'})
+    
+    #slope barplot
+fig, ax=plt.subplots()
+sns.countplot(data_slope,palette=['slategray','khaki','peru'])
+plt.title('Slope barplot')
+plt.ylabel('Frequency')
+
+    #slope pie chart
+slope_label=['1:upsloping','2:flat','3:downsloping']
+fig, ax=plt.subplots()
+ax.pie(slope_count.sort_index(),labels=slope_label,autopct='%1.1f%%',
+       startangle=20, colors=['peru','khaki','slategray'])
+plt.title('Slope pie chart')
+ax.axis('equal')
+
+print(slope_percent)
+
+#ca
+ca_count=df['ca'].value_counts()
+ca_percent=(ca_count/ca_count.values.sum())
+print(ca_percent)
+
+    #ca barplot
+fig, ax=plt.subplots()
+sns.countplot(df['ca'])
+plt.title('Ca barplot')
+plt.xlabel('ca')
+plt.ylabel('Frequency')
+
+    #ca pie chart
+fig, ax=plt.subplots()
+ax.pie(ca_count,labels=ca_count.index, autopct='%1.1f%%',
+       shadow=True,startangle=70)
+ax.axis('equal')
+plt.title('Ca pie chart')
+print(ca_count)
+
+#thal
+
+thal_count=df['thal'].value_counts()
+thal_percent=round(df['thal'].value_counts(normalize=True) * 100,1)
+thal_label=['3:normal','7:reversable defect','6:fixed defect']
+data_thal=df['thal'].map({3:'normal', 6:'fixed defect',7:'reversable defect'})
+print(thal_percent)
+
+
+    #thal barplot
+fig, ax=plt.subplots()
+sns.countplot(df['thal'],palette=['pink','lightblue','green'])
+plt.title('Thal barplot')
+plt.ylabel('Frequency')
+plt.show()
+
+    #thal pie chart
+fig, ax=plt.subplots()
+ax.pie(thal_count,labels=thal_label,colors=['pink','green','lightblue'],
+       autopct='%1.1f%%',startangle=80)
+plt.title('Thal pie chart')
+ax.axis('equal')
+
+#num
+num_count=df['num'].value_counts()
+num_percent=round(df['num'].value_counts(normalize=True) * 100,2)
+data_num=df['num'].map({1:'>50% diameter', 0:'<50% diameter'})
+num_label=['no:<50% diameter','yes:>50% diameter']
+    #num barplot
+fig, ax=plt.subplots()
+sns.countplot(data_num,palette=['crimson','darkseagreen'])
+plt.title('Diagnosis of heart disease barplot')
+plt.ylabel('Frequency')
+print(num_count)
+print(num_percent)
+
+    #num piechart
+fig, ax=plt.subplots()
+ax.pie(num_count.sort_index(),labels=num_label,autopct='%1.1f%%',
+       startangle=20, colors=['crimson','darkseagreen'])
+plt.title('Diagnosis of heart disease pie chart')
+ax.axis('equal')
+
+
+#pairplots
+sns.pairplot(df.get(['age','trestbps','chol','thalach','oldpeak']),
+             kind="scatter",palette='lightblue')
+
+
+fig, ax=plt.subplots()
+
+data_continuous=df[['age','trestbps','chol','thalach','oldpeak']]
+
+sns.heatmap(data_continuous.corr(), annot=True,cmap="YlGnBu")
+
+sns.pairplot(df.get(['age','trestbps','chol','thalach','sex','oldpeak']),
+             kind="scatter",hue="sex", markers=["s", "D"],palette='rocket')
+
+
+sns.pairplot(df.get(['age','trestbps','chol','thalach','slope','oldpeak']),
+             kind="scatter",hue="slope", markers=["o","s", "D"],palette='Set2')
+
+
+sns.pairplot(df.get(['age','trestbps','chol','thalach','fbs','oldpeak']),
+             kind="scatter",hue="fbs", markers=["s", "d"],palette='mako')
+
+sns.pairplot(df.get(['age','trestbps','chol','thalach','num','oldpeak']),
+             kind="scatter",hue="num", markers=["X", "D"],palette='Set2')
+
+
+# Outlier #
+
+#age
+age_scaled = StandardScaler().fit_transform(df['age'][:,np.newaxis])
+low_range = age_scaled[age_scaled[:,0].argsort()][:10]
+high_range= age_scaled[age_scaled[:,0].argsort()][-10:]
+print('outer range (low) of the distribution:')
+print(low_range)
+print('\nouter range (high) of the distribution:')
+print(high_range)
+
+#thalach
+thalach_scaled = StandardScaler().fit_transform(df['thalach'][:,np.newaxis])
+low_range = thalach_scaled[thalach_scaled[:,0].argsort()][:10]
+high_range= thalach_scaled[thalach_scaled[:,0].argsort()][-10:]
+print('outer range (low) of the distribution:')
+print(low_range)
+print('\nouter range (high) of the distribution:')
+print(high_range)
+
+#chol
+chol_scaled = StandardScaler().fit_transform(df['chol'][:,np.newaxis])
+low_range = chol_scaled[chol_scaled[:,0].argsort()][:10]
+high_range= chol_scaled[chol_scaled[:,0].argsort()][-10:]
+print('outer range (low) of the distribution:')
+print(low_range)
+print('\nouter range (high) of the distribution:')
+print(high_range)
+
+
+#trestbps
+trestbps_scaled = StandardScaler().fit_transform(df['trestbps'][:,np.newaxis])
+low_range = trestbps_scaled[trestbps_scaled[:,0].argsort()][:10]
+high_range= trestbps_scaled[trestbps_scaled[:,0].argsort()][-10:]
+print('outer range (low) of the distribution:')
+print(low_range)
+print('\nouter range (high) of the distribution:')
+print(high_range)
+
+df=df.drop(df[df['chol']==max(df['chol'])].index)
+
+
+#################################### 2o PART ##############################################
+
+
+
+## positive correlation
+df_corr_high=df.corr().unstack().sort_values(ascending=False).drop_duplicates().head(8)
+print(df_corr_high)
+
+## negative correlation
+df_corr_low=df.corr().unstack().sort_values(ascending=True).drop_duplicates().head(8)
+print(df_corr_low)
+
+
+target_df=df['num']
+y=pd.DataFrame(target_df).to_numpy().ravel()
+df=df.drop(['num'],axis=1)
+
+X=pd.DataFrame(df).to_numpy()
+X=StandardScaler().fit_transform(X)
+
+# kbest
+fs_model=SelectKBest(f_classif,k=13).fit(X, y)
+df_scores=pd.DataFrame(fs_model.scores_)
+df_columns=df.columns
+df_columns=pd.DataFrame(df_columns)
+feature_scores = pd.concat([df_columns, df_scores],axis=1)
+feature_scores.columns = ['name','score'] 
+print(feature_scores.sort_values(by='score',ascending=False))
+
+    #kbest score plot 
+score_sort=feature_scores.sort_values(by='score',ascending=False)
+kbest_label=score_sort['name'].values.tolist()
+
+fig, ax=plt.subplots(figsize=(10,4))
+plt.bar(x=range(1,14),height=feature_scores['score'].sort_values(ascending=False),
+        color='royalblue',tick_label=kbest_label)
+
+
+fs_model = SelectKBest(k=6).fit_transform(X,y)
+print(fs_model[0])
+print(X[0])
+print(df.head(1))
+
+
+#tree selection 
+classf = ExtraTreesClassifier(n_estimators=50)
+classf = classf.fit(X,y)
+importances = classf.feature_importances_
+fs_model = SelectFromModel(classf, prefit=True).transform(X)
+
+print(fs_model[0])
+print(X[0])
+print(df.head(1))
+
+print(fs_model.shape)
+
+#PCA
+df_pca=df
+X_pca=pd.DataFrame(df_pca).to_numpy()
+X_pca=StandardScaler().fit_transform(X_pca)
+
+pca = decomposition.PCA(n_components=13)
+pca.fit(X_pca)
+X_pca = pca.transform(X_pca)
+
+explained_variance = pca.explained_variance_ratio_
+per_var=np.round(pca.explained_variance_ratio_*100,decimals=4)
+pca_labels=['PC' + str(i) for i in range(1,14)]
+
+fig, ax=plt.subplots(figsize=(11,5))
+plt.bar(x=range(1,14),height=per_var,tick_label=pca_labels, 
+        color='mediumturquoise')
+plt.xlabel('Principal Component')
+plt.ylabel('Explained Variance Ratio')
+
+print(explained_variance)
+print(per_var)
+ #find the suitable number of components
+sum=0
+i=0
+while sum < 80:
+    sum=sum+per_var[i]
+    i=i+1
+print('Variance: %.2f'%sum)
+print('Number of components: %s'%i)
+
+
+X_pca=pd.DataFrame(df_pca)
+X_pca=StandardScaler().fit_transform(X_pca)
+
+pca = decomposition.PCA(n_components=8)
+pca.fit(X_pca)
+X_pca = pca.transform(X_pca)
+print(X_pca[0])
+
+#Save df for weka
+
+y=pd.DataFrame(y)
+
+df=df.loc[:,['thal','ca','exang','oldpeak','thalach','cp']]
+df_weka=pd.concat([df,target_df],axis=1)
+
+df_weka['ca']=df_weka['ca'].map('Vessels_{}'.format)
+df_weka['cp']=df_weka['cp'].map({1:'typical_angina',2:'atypical_angina',
+                         3:'non_anginal_pain', 4:'asymptomatic'})
+df_weka['num'] = df_weka['num'].map({0 : 'No_Presence', 1: 'Presence'})
+df_weka['thal']=df_weka['thal'].map({ '3.0': 'normal', '6.0': 'fixed_defect',
+                             '7.0': 'reversable_defect'})
+df_weka['exang']=df_weka['exang'].map({0:'Not_induced_angina',1:'Induced_angina'})
+
+
+################################# 3o PART ############################################
+
+
+#classification with "thal" and "ca" (2 highest score in feature selection)
+
+
+df=df.loc[:,['thal','ca','exang','oldpeak','thalach','cp']]
+
+X=pd.DataFrame(df).to_numpy()
+X=StandardScaler().fit_transform(X)
+
+
+X_train, X_test, y_train, y_test= train_test_split(X,y,test_size=0.20,
+                                                    random_state=42)
+
+#GaussianNB
+
+clf=GaussianNB()
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+    #Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]));
+    
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax);
+
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+plt.show()
+
+
+
+#Logistic Regression
+
+clf=LogisticRegression()
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+    #Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+ 
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); 
+
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); 
+ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+plt.show()
+ 
+  # ROC #
+    
+y_score = clf.decision_function(X_test)
+fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=clf.classes_[1])
+roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+prec, recall, _ = precision_recall_curve(y_test, y_score,
+                                         pos_label=clf.classes_[1])
+pr_display = PrecisionRecallDisplay(precision=prec, recall=recall).plot()
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 8))
+roc_display.plot(ax=ax1)
+pr_display.plot(ax=ax2)
+plt.show()
+
+
+#Linear CSV
+
+clf=LinearSVC(C=1.0,max_iter=2000)
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+    #Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax)
+
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+plt.show()
+
+  # ROC #
+    
+y_score = clf.decision_function(X_test)
+fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=clf.classes_[1])
+roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+prec, recall, _ = precision_recall_curve(y_test, y_score,
+                                         pos_label=clf.classes_[1])
+pr_display = PrecisionRecallDisplay(precision=prec, recall=recall).plot()
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 8))
+roc_display.plot(ax=ax1)
+pr_display.plot(ax=ax2)
+plt.show()
+
+
+# Decision Tree
+
+clf = tree.DecisionTreeClassifier()
+clf.fit(X_train, y_train)
+y_pred = clf.predict(X_test)
+
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+plt.show()
+
+fig, axes = plt.subplots(dpi=600)
+tree.plot_tree(clf)
+plt.show()
+
+
+# Random Forest
+
+clf=RandomForestClassifier()
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+    #Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+  
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax)  
+
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+plt.show()
+
+
+    # ROC #
+
+rfc = RandomForestClassifier(n_estimators=10, random_state=42)
+rfc.fit(X_train, y_train)
+ax = plt.gca()
+rfc_disp = plot_roc_curve(rfc, X_test, y_test, ax=ax, alpha=0.8)
+
+#----------------------------------------------------------------------------------
+
+
+#classification with "thal" and "ca" (2 highest score in feature selection)
+
+df2=df.loc[:,['thal','ca']]
+
+X=pd.DataFrame(df2).to_numpy()
+X=StandardScaler().fit_transform(X)
+
+
+X_train, X_test, y_train, y_test= train_test_split(X,y,test_size=0.2,
+                                                    random_state=42)
+
+print(X_test)
+#GaussianNB
+
+clf=GaussianNB()
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+    #Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); 
+ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+plt.show()
+
+
+
+#Logistic Regression
+
+clf=LogisticRegression()
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+    #Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); 
+ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+plt.show()
+
+# ROC #
+    
+y_score = clf.decision_function(X_test)
+fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=clf.classes_[1])
+roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+prec, recall, _ = precision_recall_curve(y_test, y_score,
+                                         pos_label=clf.classes_[1])
+pr_display = PrecisionRecallDisplay(precision=prec, recall=recall).plot()
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 8))
+roc_display.plot(ax=ax1)
+pr_display.plot(ax=ax2)
+plt.show()
+
+
+
+#Linear CSV
+
+clf=LinearSVC(C=1.0,max_iter=2000)
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+    #Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+
+   
+y_score = clf.decision_function(X_test)
+fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=clf.classes_[1])
+roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+prec, recall, _ = precision_recall_curve(y_test, y_score,
+                                         pos_label=clf.classes_[1])
+pr_display = PrecisionRecallDisplay(precision=prec, recall=recall).plot()
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 8))
+roc_display.plot(ax=ax1)
+pr_display.plot(ax=ax2)
+plt.show()
+
+
+
+
+# Decision Tree
+
+clf = tree.DecisionTreeClassifier()
+clf.fit(X_train, y_train)
+y_pred = clf.predict(X_test)
+
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); 
+ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+
+plt.show()
+
+fig, axes = plt.subplots(dpi=600)
+tree.plot_tree(clf)
+plt.show()
+
+
+
+
+# Random Forest
+
+clf=RandomForestClassifier()
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+#   Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); 
+ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+plt.show()
+
+
+
+    # ROC #
+
+rfc = RandomForestClassifier(n_estimators=10, random_state=42)
+rfc.fit(X_train, y_train)
+ax = plt.gca()
+rfc_disp = plot_roc_curve(rfc, X_test, y_test, ax=ax, alpha=0.8)
+
+
+#--------------------------------------------------------------------------------
+
+
+# Classification with "thalach" and "oldpeak" attributes
+
+df3=df.loc[:,['thalach','oldpeak']]
+
+X=pd.DataFrame(df3).to_numpy()
+X=StandardScaler().fit_transform(X)
+
+
+X_train, X_test, y_train, y_test= train_test_split(X,y,test_size=0.2,
+                                                   random_state=42)
+
+
+#GaussianNB
+
+clf=GaussianNB()
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+    #Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); 
+ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+plt.show()
+
+# Plot the decision boundary. For that, we will assign a color to each
+# point in the mesh [x_min, x_max]x[y_min, y_max]
+x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
+y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
+h = .02  # step size in the mesh
+xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+    
+    # Put the result into a color plot
+Z = Z.reshape(xx.shape)
+plt.figure(1, figsize=(4, 3))
+plt.pcolormesh(xx, yy, Z, cmap='BuPu')
+    
+# Plot also the training points
+plt.scatter(X[:, 0], X[:, 1], c=y, edgecolors='k', cmap='BuPu')
+plt.xlabel('Thalach')
+plt.ylabel('Oldpeak')
+plt.xlim(xx.min(), xx.max())
+plt.ylim(yy.min(), yy.max())
+plt.xticks(())
+plt.yticks(())
+plt.show()
+
+#Logistic Regression
+
+clf=LogisticRegression()
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+    #Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+    # labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']);
+ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+plt.show()
+
+    # Plot the decision boundary. For that, we will assign a color to each
+    # point in the mesh [x_min, x_max]x[y_min, y_max]
+x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
+y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
+h = .02  # step size in the mesh
+xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+    
+    # Put the result into a color plot
+Z = Z.reshape(xx.shape)
+plt.figure(1, figsize=(4, 3))
+plt.pcolormesh(xx, yy, Z, cmap='BuPu')
+    
+    # Plot also the training points
+plt.scatter(X[:, 0], X[:, 1], c=y, edgecolors='k', cmap='BuPu')
+plt.xlabel('Thalach')
+plt.ylabel('Oldpeak')
+    
+plt.xlim(xx.min(), xx.max())
+plt.ylim(yy.min(), yy.max())
+plt.xticks(())
+plt.yticks(())
+plt.show()
+
+
+# ROC #
+    
+y_score = clf.decision_function(X_test)
+fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=clf.classes_[1])
+roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+prec, recall, _ = precision_recall_curve(y_test, y_score,
+                                         pos_label=clf.classes_[1])
+pr_display = PrecisionRecallDisplay(precision=prec, recall=recall).plot()
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 8))
+roc_display.plot(ax=ax1)
+pr_display.plot(ax=ax2)
+plt.show()
+
+#Linear CSV
+
+clf=LinearSVC(C=1.0,max_iter=2000)
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+    #Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+
+
+# Decision Tree
+
+clf = tree.DecisionTreeClassifier()
+clf.fit(X_train, y_train)
+y_pred = clf.predict(X_test)
+
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); 
+ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+
+plt.show()
+
+fig, axes = plt.subplots(dpi=600)
+tree.plot_tree(clf)
+plt.show()
+
+
+# Random Forest
+
+clf=RandomForestClassifier()
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+#   Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+    # labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); 
+ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+
+    # ROC #
+
+fig, ax=plt.subplots()
+rfc = RandomForestClassifier(n_estimators=10, random_state=42)
+rfc.fit(X_train, y_train)
+ax = plt.gca()
+rfc_disp = plot_roc_curve(rfc, X_test, y_test, ax=ax, alpha=0.8)
+
+
+#KNN
+
+   #calculatin error
+error=[]
+for i in range(1,16):
+   clf = KNeighborsClassifier(n_neighbors=i)
+   clf.fit(X_train, y_train)
+   y_pred=clf.predict(X_test)
+   error.append(np.mean(y_pred !=y_test))
+
+fig, ax=plt.subplots(figsize=(7,5))
+plt.plot(range(1,16), error,color='blue',marker='o',markersize=8,
+         markerfacecolor='red')
+plt.xlabel('K value')
+plt.ylabel('Mean Error')
+plt.title('Error plot')
+
+# for i=5 (k=5 nearest neighborhood)
+clf = KNeighborsClassifier(n_neighbors=5)
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_test,y_test)))
+
+    #Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+fig, ax= plt.subplots()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+    # labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']);
+ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+
+  # Plot the decision boundary. For that, we will assign a color to each
+    # point in the mesh [x_min, x_max]x[y_min, y_max]
+x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
+y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
+h = .02  # step size in the mesh
+xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+
+
+color_light = ListedColormap(['#FFAAAA', '#00AAFF'])
+color_bold = ListedColormap(['#FF0000', '#00AAFF'])  
+    # Put the result into a color plot
+Z = Z.reshape(xx.shape)
+plt.figure(1, figsize=(4, 3))
+plt.pcolormesh(xx, yy, Z, cmap=color_light)
+    
+    # Plot also the training points
+plt.scatter(X[:, 0], X[:, 1], c=y, edgecolors='k', cmap=color_bold)
+plt.xlabel('Thalach')
+plt.ylabel('Oldpeak')
+    
+plt.xlim(xx.min(), xx.max())
+plt.ylim(yy.min(), yy.max())
+plt.xticks(())
+plt.yticks(())
+plt.show()
+
+#------------------------------------------------------------------------------
+
+# PCA METHOD #
+
+X_pca=pd.DataFrame(df_pca).to_numpy()
+X_pca=StandardScaler().fit_transform(X_pca)
+
+pca = decomposition.PCA(n_components=8)
+pca.fit(X_pca)
+X_pca = pca.transform(X_pca)
+
+# PCA classification
+
+X_pca_train, X_pca_test, y_train, y_test= train_test_split(X_pca,y,test_size=0.2,
+                                                           random_state=42)
+
+# Gaussian NB
+
+clf=GaussianNB()
+clf.fit(X_pca_train, y_train)
+y_pred=clf.predict(X_pca_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+
+print('Accuracy = ' + str(clf.score(X_pca_test,y_test)))
+
+#Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+
+    # labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); ax.yaxis.set_ticklabels(['Not Survived', 'Survived']);
+plt.show()
+
+#Logistic Regression
+
+clf=LogisticRegression()
+clf.fit(X_pca_train, y_train)
+y_pred=clf.predict(X_pca_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_pca_test,y_test)))
+
+#Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+
+    # labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); ax.yaxis.set_ticklabels(['Not Survived', 'Survived']);
+plt.show()
+
+
+# ROC #
+    
+y_score = clf.decision_function(X_pca_test)
+fpr, tpr, _ = roc_curve(y_test, y_score, pos_label=clf.classes_[1])
+roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+prec, recall, _ = precision_recall_curve(y_test, y_score,
+                                         pos_label=clf.classes_[1])
+pr_display = PrecisionRecallDisplay(precision=prec, recall=recall).plot()
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 8))
+roc_display.plot(ax=ax1)
+pr_display.plot(ax=ax2)
+plt.show()
+
+# Linear SVC
+
+clf=LinearSVC(C=1.0,max_iter=2000)
+clf.fit(X_pca_train, y_train)
+y_pred=clf.predict(X_pca_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_pca_test,y_test)))
+
+#Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+
+    # labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); ax.yaxis.set_ticklabels(['Not Survived', 'Survived']);
+plt.show()
+
+
+#decision tree
+
+clf = tree.DecisionTreeClassifier()
+clf.fit(X_pca_train, y_train)
+y_pred = clf.predict(X_pca_test)
+
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_pca_test,y_test)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); ax.yaxis.set_ticklabels(['No Presence', 'Presence']);
+
+plt.show()
+
+fig, axes = plt.subplots(dpi=600)
+tree.plot_tree(clf)
+plt.show()
+
+
+# Random Forest Classifier
+
+clf=RandomForestClassifier()
+clf.fit(X_pca_train, y_train)
+y_pred=clf.predict(X_pca_test)
+
+cm=confusion_matrix(y_test, y_pred)
+print(cm)
+
+print('Accuracy = ' + str(clf.score(X_pca_test,y_test)))
+
+#Alternative method for calculating accuracy
+print('Accuracy2 = ' + str(accuracy_score(y_true=y_test, y_pred=y_pred)))
+
+clf_metrics = precision_recall_fscore_support(y_test, y_pred, average='macro')
+clf_metrics_labels = ['Precision','Recall', 'F-score', 'Support']
+
+for i in range(0,len(clf_metrics)):
+    print(clf_metrics_labels[i] + ' = ' + str(clf_metrics[i]))
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, fmt='g', ax = ax); #annot=True to annotate cells
+
+    # labels, title and ticks
+ax.set_xlabel('Predicted labels');ax.set_ylabel('True labels');
+ax.set_title('Confusion Matrix');
+ax.xaxis.set_ticklabels(['No Presence', 'Presence']); ax.yaxis.set_ticklabels(['Not Survived', 'Survived']);
+plt.show()
+
+
+  # ROC #
+
+fig, ax=plt.subplots()
+rfc = RandomForestClassifier(n_estimators=10, random_state=42)
+rfc.fit(X_pca_train, y_train)
+ax = plt.gca()
+rfc_disp = plot_roc_curve(rfc, X_pca_test, y_test, ax=ax, alpha=0.8)
+
+
+########################## 4o PART ###################################################
+
+
+
+df2=df.get(['thalach','oldpeak'])
+
+fig, ax=plt.subplots()
+plt.scatter(df2['thalach'],df2['oldpeak'])
+plt.title('Scatter plot')
+plt.xlabel('thalach')
+plt.ylabel('oldpeak')
+
+X=pd.DataFrame(df2).to_numpy()
+X=StandardScaler().fit_transform(X)
+
+
+# K MEANS
+sse = []
+for i in range(1,41):
+    db = KMeans(n_clusters=i, max_iter=300, random_state=42).fit(X)
+    sse.append(db.inertia_)
+  
+fig, ax=plt.subplots(figsize=(15,5))
+plt.plot(range(1, 41), sse,)
+plt.xticks(range(1, 41))
+plt.xlabel("Number of Clusters")
+plt.ylabel("SSE")
+plt.title('Inertia plot')
+plt.show()
+
+# A list holds the silhouette coefficients for each k
+silhouette_coefficients = []
+# Notice you start at 2 clusters for silhouette coefficient
+for k in range(2, 41):
+    db = KMeans(n_clusters=k).fit(X)
+    score = silhouette_score(X, db.labels_)
+    silhouette_coefficients.append(score)
+    
+fig, ax=plt.subplots(figsize=(15,5))
+plt.plot(range(2, 41), silhouette_coefficients,color='blue',marker='o',markersize=8,
+         markerfacecolor='red')
+plt.xticks(range(2, 41))
+plt.xlabel("Number of Clusters")
+plt.ylabel("Silhouette Coefficient")
+plt.title('Silhouette plot')
+plt.show()
+
+#db = MiniBatchKMeans(n_clusters=3, max_iter=100).fit(X)
+
+db = KMeans(n_clusters=3, max_iter=100).fit(X)
+
+centroids = db.cluster_centers_
+
+labels = db.labels_
+
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+
+print('Number of iterations: %d' % db.n_iter_)
+print('Estimated number of clusters: %d' % n_clusters_)
+print('Estimated number of noise points: %d' % n_noise_)
+print("Silhouette Coefficient: %0.3f" % metrics.silhouette_score(X, labels))
+print("Mean Squared Error: %0.3f" % db.inertia_)#returns the SSE value
+
+# #####
+# Plot result
+
+# Black removed and is used for noise instead.
+unique_labels = set(labels)
+colors = [plt.cm.Spectral(each)
+          for each in np.linspace(0, 1, len(unique_labels))]
+fig, ax=plt.subplots(figsize=(10,4))
+for k, col in zip(unique_labels, colors):
+    if k == -1:
+        # Black used for noise.
+        col = [0, 0, 0, 1]
+
+    class_member_mask = (labels == k)
+
+    xy = X[class_member_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=6)
+
+plt.title('Estimated number of clusters: %d' % n_clusters_)
+plt.xticks(np.arange(-4, 4, step=0.5))
+
+
+
+
+#DBSCAN
+
+silhouette_coef=[]
+for i in np.arange(0.1, 1.2, 0.1):
+ 
+    db = DBSCAN(eps=i, min_samples=5, algorithm='kd_tree', n_jobs=8).fit(X)
+    core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+    core_samples_mask[db.core_sample_indices_] = True
+    labels = db.labels_
+    
+    # Number of clusters in labels, ignoring noise if present.
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+    n_noise_ = list(labels).count(-1)
+    score = silhouette_score(X, db.labels_)
+    silhouette_coef.append(score)
+   
+
+fig, ax=plt.subplots(figsize=(7,5))
+plt.plot( np.arange(0.1, 1.2, 0.1), silhouette_coef,color='royalblue',
+         marker='o',markersize=8,markerfacecolor='darkorange')
+plt.xlabel('Eps value')
+plt.xticks(np.arange(0.1, 1.2, 0.1))
+
+plt.ylabel('Silhouette Coefficient')
+plt.title('Silhouette plot')
+
+print('Estimated number of clusters: %d' % n_clusters_)
+print('Estimated number of noise points: %d' % n_noise_)
+print("Silhouette Coefficient: %0.3f"
+      % metrics.silhouette_score(X, labels))
+
+
+# Plot result
+
+# DBSCAN eps=0.7
+
+db = DBSCAN(eps=0.7, min_samples=5, algorithm='kd_tree', n_jobs=8).fit(X)
+core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+core_samples_mask[db.core_sample_indices_] = True
+labels = db.labels_
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+
+print('Estimated number of clusters: %d' % n_clusters_)
+print('Estimated number of noise points: %d' % n_noise_)
+print("Silhouette Coefficient: %0.3f"
+      % metrics.silhouette_score(X, labels))
+
+
+    # Black removed and is used for noise instead.
+unique_labels = set(labels)
+colors = [plt.cm.Spectral(each)
+          for each in np.linspace(0, 1, len(unique_labels))]
+for k, col in zip(unique_labels, colors):
+    if k == -1:
+        # Black used for noise.
+        col = [0, 0, 0, 1]
+
+    class_member_mask = (labels == k)
+
+    xy = X[class_member_mask & core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=14)
+
+    xy = X[class_member_mask & ~core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=6)
+plt.title('Estimated number of clusters: %d (eps=0.7)' % n_clusters_)
+
+
+
+# DBSCAN eps=0.4
+
+db = DBSCAN(eps=0.4, min_samples=5, algorithm='kd_tree', n_jobs=8).fit(X)
+core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+core_samples_mask[db.core_sample_indices_] = True
+labels = db.labels_
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+
+print('Estimated number of clusters: %d' % n_clusters_)
+print('Estimated number of noise points: %d' % n_noise_)
+print("Silhouette Coefficient: %0.3f"
+      % metrics.silhouette_score(X, labels))
+
+
+    # Black removed and is used for noise instead.
+unique_labels = set(labels)
+colors = [plt.cm.Spectral(each)
+          for each in np.linspace(0, 1, len(unique_labels))]
+for k, col in zip(unique_labels, colors):
+    if k == -1:
+        # Black used for noise.
+        col = [0, 0, 0, 1]
+
+    class_member_mask = (labels == k)
+
+    xy = X[class_member_mask & core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=14)
+
+    xy = X[class_member_mask & ~core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=6)
+
+plt.title('Estimated number of clusters: %d (eps=0.4)' % n_clusters_)
+
+
+# DBSCAN eps=0.3
+
+db = DBSCAN(eps=0.3, min_samples=5, algorithm='kd_tree', n_jobs=8).fit(X)
+core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+core_samples_mask[db.core_sample_indices_] = True
+labels = db.labels_
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+
+print('Estimated number of clusters: %d' % n_clusters_)
+print('Estimated number of noise points: %d' % n_noise_)
+print("Silhouette Coefficient: %0.3f"
+      % metrics.silhouette_score(X, labels))
+
+
+# Black removed and is used for noise instead.
+unique_labels = set(labels)
+colors = [plt.cm.Spectral(each)
+          for each in np.linspace(0, 1, len(unique_labels))]
+for k, col in zip(unique_labels, colors):
+    if k == -1:
+        # Black used for noise.
+        col = [0, 0, 0, 1]
+
+    class_member_mask = (labels == k)
+
+    xy = X[class_member_mask & core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=14)
+
+    xy = X[class_member_mask & ~core_samples_mask]
+    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+             markeredgecolor='k', markersize=6)
+
+plt.title('Estimated number of clusters: %d (eps=0.3)' % n_clusters_)
+
+
+
+# OPTICS
+
+clust = OPTICS(min_samples=5, metric = 'euclidean', xi=0.01, min_cluster_size=.05)
+#clust = OPTICS(min_samples=5, metric = 'euclidean', xi=0.01, min_cluster_size=.1)
+
+# Run the fit
+clust.fit(X)
+print("Silhouette Coefficient: %0.3f"
+      % metrics.silhouette_score(X,clust.labels_))
+
+labels_050 = cluster_optics_dbscan(reachability=clust.reachability_,
+                                   core_distances=clust.core_distances_,
+                                   ordering=clust.ordering_, eps=0.3)
+labels_100 = cluster_optics_dbscan(reachability=clust.reachability_,
+                                   core_distances=clust.core_distances_,
+                                   ordering=clust.ordering_, eps=0.2)
+
+space = np.arange(len(X))
+reachability = clust.reachability_[clust.ordering_]
+labels = clust.labels_[clust.ordering_]
+
+plt.figure(figsize=(10, 7))
+G = gridspec.GridSpec(2, 3)
+ax1 = plt.subplot(G[0, :])
+ax2 = plt.subplot(G[1, 0])
+ax3 = plt.subplot(G[1, 1])
+ax4 = plt.subplot(G[1, 2])
+
+# Reachability plot
+colors = ['g.', 'r.', 'b.', 'y.', 'c.']
+for klass, color in zip(range(0, 5), colors):
+    Xk = space[labels == klass]
+    Rk = reachability[labels == klass]
+    ax1.plot(Xk, Rk, color, alpha=0.3)
+ax1.plot(space[labels == -1], reachability[labels == -1], 'k.', alpha=0.3)
+ax1.plot(space, np.full_like(space, 2., dtype=float), 'k-', alpha=0.5)
+ax1.plot(space, np.full_like(space, 0.5, dtype=float), 'k-.', alpha=0.5)
+ax1.set_ylabel('Reachability (epsilon distance)')
+ax1.set_title('Reachability Plot')
+
+# OPTICS PLOT
+print(clust.labels_)
+
+for klass, color in zip(range(0, 5), colors):
+    print(klass)
+    Xk = X[clust.labels_ == klass]
+    ax2.plot(Xk[:, 0], Xk[:, 1], color, alpha=1)
+ax2.plot(X[clust.labels_ == -1, 0], X[clust.labels_ == -1, 1], 'k.', alpha=0.1)
+ax2.set_title('Automatic Clustering\nOPTICS')
+
+# DBSCAN at 0.5 PLOT
+for klass, color in zip(range(0, 5), colors):
+    Xk = X[labels_050 == klass]
+    ax3.plot(Xk[:, 0], Xk[:, 1], color, alpha=0.3)
+ax3.plot(X[labels_050 == -1, 0], X[labels_050 == -1, 1], 'k+', alpha=0.1)
+ax3.set_title('Clustering at 0.3 epsilon cut\nDBSCAN')
+
+# DBSCAN at .2 PLOT
+for klass, color in zip(range(0, 5), colors):
+    Xk = X[labels_100 == klass]
+    ax4.plot(Xk[:, 0], Xk[:, 1], color, alpha=0.3)
+ax4.plot(X[labels_100 == -1, 0], X[labels_100 == -1, 1], 'k+', alpha=0.1)
+ax4.set_title('Clustering at 0.2 epsilon cut\nDBSCAN')
+
+plt.tight_layout()
+plt.show()
+
+
+
+#---------------------------------------------------------------------
+
+# PCA
+
+
+X_pca=pd.DataFrame(df_pca).to_numpy()
+X_pca=StandardScaler().fit_transform(X_pca)
+
+pca = decomposition.PCA(n_components=3)
+pca.fit(X_pca)
+X_pca = pca.transform(X_pca)
+
+
+# K MEANS
+
+sse = []
+for i in range(1,41):
+    db = KMeans(n_clusters=i, max_iter=300, random_state=42).fit(X_pca)
+    sse.append(db.inertia_)
+  
+fig, ax=plt.subplots(figsize=(15,5))
+plt.plot(range(1, 41), sse,)
+plt.xticks(range(1, 41))
+plt.xlabel("Number of Clusters")
+plt.ylabel("SSE")
+plt.title('Inertia plot')
+plt.show()
+
+# A list holds the silhouette coefficients for each k
+silhouette_coefficients = []
+# Notice you start at 2 clusters for silhouette coefficient
+for k in range(2, 41):
+    db = KMeans(n_clusters=k).fit(X_pca)
+    score = silhouette_score(X_pca, db.labels_)
+    silhouette_coefficients.append(score)
+    
+fig, ax=plt.subplots(figsize=(15,5))
+plt.plot(range(2, 41), silhouette_coefficients,color='blue',marker='o',markersize=8,
+         markerfacecolor='red')
+plt.xticks(range(2, 41))
+plt.xlabel("Number of Clusters")
+plt.ylabel("Silhouette Coefficient")
+plt.title('Silhouette plot')
+plt.show()
+
+#db = MiniBatchKMeans(n_clusters=3, max_iter=100).fit(X)
+
+db = KMeans(n_clusters=2, max_iter=100).fit(X_pca)
+
+centroids = db.cluster_centers_
+
+labels = db.labels_
+
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+
+print('Number of iterations: %d' % db.n_iter_)
+print('Estimated number of clusters: %d' % n_clusters_)
+print('Estimated number of noise points: %d' % n_noise_)
+print("Silhouette Coefficient: %0.3f" % metrics.silhouette_score(X_pca, labels))
+print("Mean Squared Error: %0.3f" % db.inertia_)#returns the SSE value
+
+
+#DBSCAN
+
+silhouette_coef=[]
+for i in np.arange(0.1, 1.8, 0.1):
+ 
+    db = DBSCAN(eps=i, min_samples=2, algorithm='kd_tree', n_jobs=8).fit(X_pca)
+    core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+    core_samples_mask[db.core_sample_indices_] = True
+    labels = db.labels_
+    
+    # Number of clusters in labels, ignoring noise if present.
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+    n_noise_ = list(labels).count(-1)
+    score = silhouette_score(X_pca, db.labels_)
+    silhouette_coef.append(score)
+   
+
+fig, ax=plt.subplots(figsize=(7,5))
+plt.plot(np.arange(0.1, 1.8, 0.1), silhouette_coef,color='royalblue',
+         marker='o',markersize=8,markerfacecolor='darkorange')
+plt.xlabel('Eps value')
+plt.xticks(np.arange(0.1, 1.8, 0.1))
+
+plt.ylabel('Silhouette Coefficient')
+plt.title('Silhouette plot')
+
+
+#eps=1.4
+db = DBSCAN(eps=1.4, min_samples=2, algorithm='kd_tree', n_jobs=8).fit(X_pca)
+core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+core_samples_mask[db.core_sample_indices_] = True
+labels = db.labels_
+    
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+score = silhouette_score(X_pca, db.labels_)
+silhouette_coef.append(score)
+
+print('Estimated number of clusters: %d' % n_clusters_)
+print('Estimated number of noise points: %d' % n_noise_)
+print("Silhouette Coefficient: %0.3f"
+      % metrics.silhouette_score(X_pca, labels))
+
+#eps=1.1
+db = DBSCAN(eps=1.1, min_samples=2, algorithm='kd_tree', n_jobs=8).fit(X_pca)
+core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+core_samples_mask[db.core_sample_indices_] = True
+labels = db.labels_
+    
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+score = silhouette_score(X_pca, db.labels_)
+silhouette_coef.append(score)
+
+print('Estimated number of clusters: %d' % n_clusters_)
+print('Estimated number of noise points: %d' % n_noise_)
+print("Silhouette Coefficient: %0.3f"
+      % metrics.silhouette_score(X_pca, labels))
+
+# OPTICS
+
+clust = OPTICS(min_samples=5, metric = 'euclidean', xi=0.01, min_cluster_size=.05)
+#clust = OPTICS(min_samples=5, metric = 'euclidean', xi=0.01, min_cluster_size=.1)
+clust.fit(X_pca)
+
+space = np.arange(len(X_pca))
+reachability = clust.reachability_[clust.ordering_]
+labels = clust.labels_[clust.ordering_]
+
+
+
+fig, ax=plt.subplots()
+# Reachability plot
+colors = ['g.', 'r.', 'b.', 'y.', 'c.']
+for klass, color in zip(range(0, 5), colors):
+    Xk = space[labels == klass]
+    Rk = reachability[labels == klass]
+    ax1.plot(Xk, Rk, color, alpha=0.3)
+ax.plot(space[labels == -1], reachability[labels == -1], 'k.', alpha=0.3)
+ax.plot(space, np.full_like(space, 2., dtype=float), 'k-', alpha=0.5)
+ax.plot(space, np.full_like(space, 0.5, dtype=float), 'k-.', alpha=0.5)
+ax.set_ylabel('Reachability (epsilon distance)')
+ax.set_title('Reachability Plot')
+plt.show()
+
+
+
+############################ 5o PART ###############################################
+
+y=pd.DataFrame(y)
+
+df=df.loc[:,['thal','ca','exang','oldpeak','thalach','cp']]
+df_apriori=pd.concat([df,target_df],axis=1)
+bin_labels = []
+n_of_bins = 5
+for i in range(0,n_of_bins):
+    bin_labels.append('thalach_Bin_' + str(i+1))
+df_apriori['thalach_interval'] = pd.qcut(df_apriori['thalach'], q=n_of_bins)
+df_apriori['thalach_bins'] = pd.qcut(df_apriori['thalach'], q=n_of_bins, labels=bin_labels).astype(str)
+
+print(df_apriori.loc[:,['thalach_interval','thalach_bins']])
+
+bin_labels = []
+n_of_bins = 3
+for i in range(0,n_of_bins):
+    bin_labels.append('oldpeak_Bin_' + str(i+1))
+df_apriori['oldpeak_interval'] = pd.qcut(df_apriori['oldpeak'], q=n_of_bins) 
+df_apriori['oldpeak_bins'] = pd.qcut(df_apriori['oldpeak'], q=n_of_bins, labels=bin_labels).astype(str)
+
+print(df_apriori.loc[:,['oldpeak_interval','oldpeak_bins']])
+
+df_apriori=df_apriori.loc[:,['thal','ca','exang','oldpeak_bins','thalach_bins','cp','num']]
+#convert to nominal
+
+df_apriori['ca']=df_apriori['ca'].map('Vessels {}'.format)
+df_apriori['cp']=df_apriori['cp'].map({1:'typical_angina',2:' atypical_angina',
+                         3:'non_anginal_pain', 4:'asymptomatic'})
+df_apriori['num'] = df_apriori['num'].map({0 : 'No_Presence', 1: 'Presence'})
+df_apriori['thal']=df_apriori['thal'].map({ '3.0': 'normal', '6.0': 'fixed_defect',
+                             '7.0': 'reversable_defect'})
+df_apriori['exang']=df_apriori['exang'].map({0:'Not_induced_angina',1:'Induced_angina'})
+
+
+
+X_apriori= df_apriori.values.tolist()
+
+print(X_apriori[0:5])
+print(df_apriori.dtypes)
+print(df_apriori.head(5))
+
+te = TransactionEncoder()
+te_ary = te.fit(X_apriori).transform(X_apriori)
+
+df_apriori = pd.DataFrame(te_ary, columns=te.columns_)
+frequent_itemsets = apriori(df_apriori, min_support=0.2, use_colnames=True)
+print(frequent_itemsets)
+
+
+rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.7)
+
+print(rules)
+
+#-----------------------------------------------------------------------
+
+#PCA
+
+
+X_pca=pd.DataFrame(df_pca).to_numpy()
+X_pca=StandardScaler().fit_transform(X_pca)
+
+pca = decomposition.PCA(n_components=8)
+pca.fit(X_pca)
+X_pca = pca.transform(X_pca)
+
+
+X_pca=pd.DataFrame(X_pca)
+
+bin_labels = []
+n_of_bins = 4
+for i in range(0,n_of_bins):
+    bin_labels.append('PCA1_Bin_' + str(i+1))
+X_pca['PCA1_interval'] = pd.qcut(X_pca.loc[:,0], q=n_of_bins)
+X_pca['PCA1_bins'] = pd.qcut(X_pca.loc[:,0], q=n_of_bins, labels=bin_labels).astype(str)
+
+bin_labels = []
+n_of_bins = 4
+for i in range(0,n_of_bins):
+    bin_labels.append('PCA2_Bin_' + str(i+1))
+X_pca['PCA2_interval'] = pd.qcut(X_pca.loc[:,1], q=n_of_bins)
+X_pca['PCA2_bins'] = pd.qcut(X_pca.loc[:,1], q=n_of_bins, labels=bin_labels).astype(str)
+
+bin_labels = []
+n_of_bins = 4
+for i in range(0,n_of_bins):
+    bin_labels.append('PCA3_Bin_' + str(i+1))
+X_pca['PCA3_interval'] = pd.qcut(X_pca.loc[:,2], q=n_of_bins)
+X_pca['PCA3_bins'] = pd.qcut(X_pca.loc[:,2], q=n_of_bins, labels=bin_labels).astype(str)
+
+
+bin_labels = []
+n_of_bins = 4
+for i in range(0,n_of_bins):
+    bin_labels.append('PCA4_Bin_' + str(i+1))
+X_pca['PCA4_interval'] = pd.qcut(X_pca.loc[:,3], q=n_of_bins)
+X_pca['PCA4_bins'] = pd.qcut(X_pca.loc[:,3], q=n_of_bins, labels=bin_labels).astype(str)
+
+bin_labels = []
+n_of_bins = 4
+for i in range(0,n_of_bins):
+    bin_labels.append('PCA5_Bin_' + str(i+1))
+X_pca['PCA5_interval'] = pd.qcut(X_pca.loc[:,4], q=n_of_bins)
+X_pca['PCA5_bins'] = pd.qcut(X_pca.loc[:,4], q=n_of_bins, labels=bin_labels).astype(str)
+
+bin_labels = []
+n_of_bins = 4
+for i in range(0,n_of_bins):
+    bin_labels.append('PCA6_Bin_' + str(i+1))
+X_pca['PCA6_interval'] = pd.qcut(X_pca.loc[:,5], q=n_of_bins)
+X_pca['PCA6_bins'] = pd.qcut(X_pca.loc[:,5], q=n_of_bins, labels=bin_labels).astype(str)
+
+bin_labels = []
+n_of_bins = 4
+for i in range(0,n_of_bins):
+    bin_labels.append('PCA7_Bin_' + str(i+1))
+X_pca['PCA7_interval'] = pd.qcut(X_pca.loc[:,6], q=n_of_bins)
+X_pca['PCA7_bins'] = pd.qcut(X_pca.loc[:,6], q=n_of_bins, labels=bin_labels).astype(str)
+
+bin_labels = []
+n_of_bins = 4
+for i in range(0,n_of_bins):
+    bin_labels.append('PCA8_Bin_' + str(i+1))
+X_pca['PCA8_interval'] = pd.qcut(X_pca.loc[:,7], q=n_of_bins)
+X_pca['PCA8_bins'] = pd.qcut(X_pca.loc[:,7], q=n_of_bins, labels=bin_labels).astype(str)
+
+
+X_pca=X_pca.loc[:,['PCA1_bins','PCA2_bins','PCA3_bins','PCA4_bins','PCA5_bins',
+                   'PCA6_bins','PCA7_bins','PCA8_bins']]
+
+
+X_pca= pd.concat([X_pca,target_df], axis=1)
+
+
+X_pca=X_pca.iloc[:-1]
+
+X_pca['num'] = X_pca['num'].map({0 : 'No_Presence', 1: 'Presence'})
+
+
+X_pca = X_pca.astype('bool')
+X_pca_apriori= X_pca.values.tolist()
+
+print(X_pca_apriori[0:5])
+print( X_pca.dtypes)
+print( X_pca.head(5))
+print(X_pca.info())
+te = TransactionEncoder()
+te_ary = te.fit(X_pca_apriori).transform(X_pca_apriori)
+
+X_pca = pd.DataFrame(te_ary, columns=te.columns_)
+frequent_itemsets = apriori( X_pca, min_support=0.2, use_colnames=True)
+print(frequent_itemsets)
+
+rules_pca = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.7)
+
+print(rules_pca)
